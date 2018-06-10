@@ -1,0 +1,329 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace GameS
+{
+    public partial class Form1 : Form
+    {
+        Graphics g;
+        Snake snake = new Snake();
+        Score score;
+        Random randScore = new Random();
+        public int ScoreQuantity = 0;
+        bool game = false;
+
+        bool Up = false;
+        bool Down = false;
+        bool Left = false;
+        bool Right = false;
+
+
+        public Form1()
+        {
+            InitializeComponent();
+            score = new Score(randScore);
+            gameover.Visible = false;
+            result.Text = Convert.ToString(ScoreQuantity);
+            game = true;
+        }
+
+        private void Form1_Paint(object sender, PaintEventArgs e)
+        {
+            g = e.Graphics;
+
+            snake.DrawSnake(g);
+            score.DrawScore(g);
+        }
+
+
+        //Move
+        private void Form1_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyData == Keys.Down && Up == false)
+            {
+                Up = false;
+                Down = true;
+                Left = false;
+                Right = false;
+            }
+
+            if (e.KeyData == Keys.Up && Down == false)
+            {
+                Up = true;
+                Down = false;
+                Left = false;
+                Right = false;
+            }
+
+            if (e.KeyData == Keys.Right && Left == false)
+            {
+                Up = false;
+                Down = false;
+                Left = false;
+                Right = true;
+            }
+
+            if (e.KeyData == Keys.Left && Right == false)
+            {
+                Up = false;
+                Down = false;
+                Left = true;
+                Right = false;
+            }
+        }
+
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            if (Up)
+            {
+                snake.MoveUp();
+            }
+            if (Down)
+            {
+                snake.MoveDown();
+            }
+            if (Right)
+            {
+                snake.MoveRight();
+            }
+            if (Left)
+            {
+                snake.MoveLeft();
+            }
+
+            //speed
+            if (ScoreQuantity == 15)
+            {
+                timer1.Interval = 200;
+            }
+            if (ScoreQuantity == 30)
+            {
+                timer1.Interval = 150;
+            }
+            if (ScoreQuantity == 45)
+            {
+                timer1.Interval = 100;
+            }
+            if (ScoreQuantity == 60)
+            {
+                timer1.Interval = 50;
+            }
+
+
+            this.Invalidate();
+
+            Collision();
+            Eat();
+        }
+
+        public void Collision()
+        {
+            //5 przypadków kolizji
+
+            if (snake.SnakePart[0].X <= 1 || snake.SnakePart[0].X >= 315)
+            {
+                gameover.Visible = true;
+                timer1.Stop();
+                
+
+
+            }
+            if (snake.SnakePart[0].Y <= 1 || snake.SnakePart[0].Y >= 300)
+            {
+                gameover.Visible = true;
+                timer1.Stop();
+               
+            }
+
+            for (int i = 1; i < snake.SnakePart.Length; i++)
+            {
+                if (snake.SnakePart[0].IntersectsWith(snake.SnakePart[i]))
+                {
+                    gameover.Visible = true;
+                    timer1.Enabled = false;
+                   
+                }
+            }
+
+        }
+
+        public void Eat()
+        {
+            if (snake.SnakePart[0].IntersectsWith(score.ScoreRectangle))
+            {
+                ScoreQuantity += 1;
+                result.Text = Convert.ToString(ScoreQuantity);
+                snake.GrowUp(ScoreQuantity);
+
+                score.ScoreLocation(randScore);
+
+            }
+        }
+
+       
+    }
+}
+
+
+
+
+///////////////
+
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Drawing;
+
+
+namespace GameS
+{
+    class Snake
+    {
+
+        public Rectangle[] SnakePart;
+        public SolidBrush solidBrush = new SolidBrush(Color.Orange);
+        // public SolidBrush soli;
+        int x, y, widith, height;
+        public Rectangle Head;
+        Random random = new Random();
+
+        public Snake()
+        {
+ 
+            SnakePart = new Rectangle[4];
+
+            x = random.Next(50, 400);
+            y = random.Next(25, 300);
+            widith = 10;
+            height = 10;
+          
+            
+            for (int i = 0; i < SnakePart.Length;  i++)
+            {
+               SnakePart[i] = new Rectangle(x, y, widith, height);
+               x -= 11;
+            }
+
+            Head = SnakePart[0];
+        }
+
+        public void DrawSnake(Graphics paper)
+        {
+            
+            foreach (Rectangle rec in SnakePart)
+            {
+                paper.FillRectangle(solidBrush, rec);
+            }
+
+            
+            
+        }
+
+        //czêœci snake'a "pod¹¿aj¹" za sob¹, tj. poprzedni zajmuje miejsce nastêpnego
+
+        public void DrawSnake()
+        {
+
+            for (int i = SnakePart.Length - 1; i >0; i--)
+             {
+                 SnakePart[i] = SnakePart[i - 1];
+             }
+
+        }
+
+        //obsluga poruszania siê
+
+        public void MoveUp()
+        {
+           
+            DrawSnake();
+            SnakePart[0].Y -= 11;
+        }
+        public void MoveDown()
+        {
+           
+            DrawSnake();
+            SnakePart[0].Y += 11;
+        }
+        public void MoveRight()
+        {          
+            DrawSnake();
+            SnakePart[0].X += 11;
+        }
+        public void MoveLeft()
+        {          
+            DrawSnake();
+            SnakePart[0].X -= 11;
+
+        }
+
+        public void GrowUp(int a)
+        {
+            Array.Resize(ref SnakePart, 4 + a);
+            SnakePart[4 + a - 1] = new Rectangle(((x - 16)* 4 + a - 1), y, widith, height);
+
+        }
+
+    }
+
+
+}
+
+        
+    
+
+//////////
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Drawing;
+
+namespace GameS
+{
+    class Score
+    {
+
+        public Rectangle ScoreRectangle; 
+        public SolidBrush so;
+        public int x, y, widith, height;
+
+        public Score(Random ScoreRandom)
+        {
+            widith = height = 10;
+            so = new SolidBrush(Color.LightPink);
+
+            x = ScoreRandom.Next(20, 320); 
+            y = ScoreRandom.Next(20, 320);
+
+          ScoreRectangle = new Rectangle(x, y, widith, height);
+        }
+
+        public void ScoreLocation(Random ScoreRandom)
+        {
+            x = ScoreRandom.Next(15, 305); //405 - 15
+            y = ScoreRandom.Next(15, 305);
+        }
+
+        public void DrawScore(Graphics paper)
+        {
+            ScoreRectangle.X = x;
+            ScoreRectangle.Y = y;
+
+            paper.FillRectangle(so, ScoreRectangle);
+        }
+    }
+}
